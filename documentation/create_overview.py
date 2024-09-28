@@ -1,15 +1,10 @@
-# dieses script extrahiert aus dem grove wiki, die informationen, 
-# ob codecraft unterstützt wird. 
-
-# Verzeichnis mit den Markdown-Dateien
-directory = '/home/KingBBQ/src/wiki-documents'
-
-
-
 import os
 import re
 import pandas as pd
 import yaml
+
+# Verzeichnis mit den Markdown-Dateien
+directory = '/home/KingBBQ/src/wiki-documents'  # Pfad zu deinem Verzeichnis
 
 # Funktion zum Einlesen und Extrahieren der Header-Informationen
 def extract_info_from_markdown(file_path):
@@ -49,8 +44,13 @@ for root, dirs, files in os.walk(directory):
             title, date, codecraft_present = extract_info_from_markdown(file_path)
             data.append([relative_path, human_readable_path, title, date, codecraft_present])
 
-# Erstellen eines DataFrame und Speichern als CSV
+# Erstellen eines DataFrame und Filtern nach "Codecraft Present"
 df = pd.DataFrame(data, columns=['Relative Path', 'Human Readable Path', 'Title', 'Date', 'Codecraft Present'])
-df = df.sort_values(by='Codecraft Present', ascending=False)
+df_codecraft = df[df['Codecraft Present'] == True]
 
-df.to_csv('output.csv', index=False)
+# Erstellen der Markdown-Tabelle
+markdown_table = df_codecraft.to_markdown(index=False)
+
+# Speichern der Tabelle in einer separaten .md-Datei
+with open('codecraft_present.md', 'w', encoding='utf-8') as md_file:
+    md_file.write(markdown_table)
