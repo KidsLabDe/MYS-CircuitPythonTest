@@ -4,9 +4,20 @@ import time
 import neopixel
 import pwmio
 from adafruit_motor import servo
-
+import digitalio
 
 import rotaryio
+
+
+
+# Die Positionen sind für:
+# [Drehfuss, Arm unten, Arm oben, Greifer]
+positionen = [[90, 90, 90, 90]
+             ]
+
+
+# Bewegungsverzögerung in Sekunden
+Bewegungsdauer = 0.4
 
 
 encoder = rotaryio.IncrementalEncoder(board.GP2, board.GP3)
@@ -51,6 +62,16 @@ def get_voltage(pin):
 
 
   
+# Set up GP20 as an input with a pull-up resistor
+btn_rec = digitalio.DigitalInOut(board.GP20)
+btn_rec.direction = digitalio.Direction.INPUT
+btn_rec.pull = digitalio.Pull.UP  # Use a pull-up resistor
+
+# Set up GP20 as an input with a pull-up resistor
+btn_play = digitalio.DigitalInOut(board.GP21)
+btn_play.direction = digitalio.Direction.INPUT
+btn_play.pull = digitalio.Pull.UP  # Use a pull-up resistor
+
 
 
 
@@ -73,7 +94,7 @@ def move_servos_eased(pwms, start_angles, end_angles, duration):
         t = i / steps
         eased_t = ease_in_out(t)
         for pwm, start_angle, end_angle in zip(pwms, start_angles, end_angles):
-            print(pwm, start_angle, end_angle)
+            # print(pwm, start_angle, end_angle)
             angle = start_angle + (end_angle - start_angle) * eased_t
             set_servo_angle(pwm, angle)
         time.sleep(duration / steps)
@@ -115,32 +136,41 @@ while True:
         servo1.angle = winkel
     last_position = position
     
-    print(f"X-Achse: {x_val:.2f} V, Y-Achse: {y_val:.2f} V")
+    # print(f"X-Achse: {x_val:.2f} V, Y-Achse: {y_val:.2f} V")
     
     time.sleep(0.1)
     
     if x_val < 1.6:
         bewegung = abs(x_val - 1.6)
-        if (achsen[2] < 180):
+        if (achsen[2] < 170):
             achsen[2] += bewegung * 5
             servo2.angle = achsen[2]
             print(f"Joystick nach links {achsen[2]}")
     if x_val > 1.7:
         bewegung = x_val - 1.7
-        if (achsen[2] > 0):
+        if (achsen[2] > 10):
             achsen[2] -= bewegung * 5
             servo2.angle = achsen[2]
             print(f"Joystick nach rechts {achsen[2]}")
     if y_val < 1:
-        if (achsen[3] < 180):
+        if (achsen[3] < 170):
             achsen[3] += 5
             servo3.angle = achsen[3]
             print(f"Joystick nach unten {achsen[3]}")
     elif y_val > 2:   
-        if (achsen[3] > 0):
+        if (achsen[3] > 10):
             achsen[3] -= 5
             servo3.angle = achsen[3]
             print(f"Joystick nach oben {achsen[3]}")
             
-
-    
+    # Check if the button is pressed
+    if not(btn_play.value):
+        print("PLAY is pressed")
+        zuPosBewegen(positionen)
+        
+        time.sleep(1)
+    if not(btn_rec.value):
+        print("REC is pressed")
+        positionen.append(achsen)
+        print(positionen)
+        time.sleep(1)

@@ -1,22 +1,32 @@
+# SPDX-FileCopyrightText: Copyright (c) 2023 Neradoc
+#
+# SPDX-License-Identifier: Unlicense
+
+"""
+4-digits 7-segments display with default order.
+"""
+
+import time
 import board
-import digitalio
-import adafruit_tm1637
+from tm1637_display import TM1637Display
 
-# Initialisiere die Pins für das TM1637-Modul
-clk = digitalio.DigitalInOut(board.GP5)
-dio = digitalio.DigitalInOut(board.GP4)
+display = TM1637Display(board.GP5, board.GP4, length=4, digit_order=(0, 1, 2, 3))
 
-# Initialisiere das TM1637-Modul
-display = adafruit_tm1637.TM1637(clk, dio)
+message = "    3141592653589793    "
 
-# Setze die Helligkeit (optional)
-display.brightness = 0.5
+while True:
+    for i in range(5):
+        display.print("0000")
+        time.sleep(0.1)
+        display.print("    ")
+        time.sleep(0.1)
 
-# Zeige eine Zahl auf dem Display an
-display.show('1234')
+    for pos in range(len(message) - 4):
+        display.print(message[pos : pos + 4])
+        time.sleep(0.2)
 
-# Alternativ: Zeige jede Ziffer einzeln an
-# display[0] = 1
-# display[1] = 2
-# display[2] = 3
-# display[3] = 4
+    for i in range(0, 10000, 7):
+        display.print(f"{i:4}")
+    display.print(9999)
+
+    time.sleep(0.2)
