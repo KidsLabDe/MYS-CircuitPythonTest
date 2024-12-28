@@ -19,15 +19,17 @@ def servo_bewegen(servo, start_winkel, end_winkel, schritt, wartezeit):
         servo.angle = winkel
         time.sleep(wartezeit)
 
-while True:
-    # servo_bewegen(mein_servo, 0, 180, 1, 0.01)
-    mein_servo.angle = 0
-    time.sleep(0.5)
-    mein_servo.angle = 45
-    time.sleep(0.5)
-    mein_servo.angle = 90
-    time.sleep(0.5)
-    mein_servo.angle = 135
-    time.sleep(0.5)
-    mein_servo.angle = 180
-    time.sleep(0.5)
+
+# servo_bewegen(mein_servo, 0, 180, 1, 0.01)
+mein_servo.angle = 0
+time.sleep(0.5)
+mein_servo.angle = 45
+time.sleep(0.5)
+mein_servo.angle = 90
+time.sleep(0.5)
+mein_servo.angle = 135
+time.sleep(0.5)
+mein_servo.angle = 180
+time.sleep(0.5)
+mein_servo.angle = 90
+time.sleep(0.5)
