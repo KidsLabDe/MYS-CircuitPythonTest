@@ -15,6 +15,7 @@ import rotaryio
 positionen = [[90, 90, 90, 90]
              ]
 
+positionen = [[90, 90, 90, 90], [34, 110, 10, 70], [34, 110, 10, 70], [34, 110, 10, 70], [34, 110, 10, 70], [34, 110, 10, 70], [34, 110, 10, 70]]
 
 # Bewegungsverzögerung in Sekunden
 Bewegungsdauer = 0.4
@@ -67,6 +68,16 @@ btn_rec = digitalio.DigitalInOut(board.GP20)
 btn_rec.direction = digitalio.Direction.INPUT
 btn_rec.pull = digitalio.Pull.UP  # Use a pull-up resistor
 
+
+# der change butten ändert die achsen - die pico hat nur 3 ADC und kann deswegen nur 1 1/2 joysticks abfragen
+btn_change = digitalio.DigitalInOut(board.GP17)
+btn_change.direction = digitalio.Direction.INPUT
+btn_change.pull = digitalio.Pull.UP  # Use a pull-up resistor
+
+# wir merken uns, welche achsen gerade angesteuert werden
+
+axis_12 = True
+
 # Set up GP20 as an input with a pull-up resistor
 btn_play = digitalio.DigitalInOut(board.GP21)
 btn_play.direction = digitalio.Direction.INPUT
@@ -74,30 +85,70 @@ btn_play.pull = digitalio.Pull.UP  # Use a pull-up resistor
 
 
 
-
-def get_duty_cycle(x):
-    return int((4369*x+196605)/30)
-
-# Funktion zum Setzen des PWM-Duty-Cycles für einen bestimmten Winkel
-def set_servo_angle(pwm, angle):
-    pwm.duty_cycle = get_duty_cycle(angle)
-
-
-# Funktion für Servo Easing
 def ease_in_out(t):
-    return t * t * (3 - 2 * t)
+    """
+    Kubische Easing-Funktion für sanftere Bewegungen
+    t: Float zwischen 0.0 und 1.0
+    """
+    if t < 0.5:
+        return 4 * t * t * t
+    else:
+        p = 2 * t - 2
+        return 0.5 * p * p * p + 1
 
-def move_servos_eased(pwms, start_angles, end_angles, duration):
-    steps = 500
+def set_servo_angle(pwm, angle):
+    """
+    Setzt den Servo auf einen bestimmten Winkel
+    pwm: PWM-Objekt
+    angle: Winkel in Grad (0-180)
+    """
+    # Typische Werte für SG90 Servo (anpassen falls nötig)
+    min_duty = 0.5  # 0.5ms bei 0°
+    max_duty = 2.5  # 2.5ms bei 180°
+    duty = min_duty + (max_duty - min_duty) * (angle / 180)
+    pwm.duty_cycle = int(duty * 65535 / 100)  # Umrechnung für 16-bit Timer
+
+def move_servos_eased(pwms, start_angles, end_angles, duration, steps=500):
+    """
+    Bewegt mehrere Servos gleichzeitig mit Easing
     
-    for i in range(steps + 1):
-        t = i / steps
-        eased_t = ease_in_out(t)
-        for pwm, start_angle, end_angle in zip(pwms, start_angles, end_angles):
-            # print(pwm, start_angle, end_angle)
-            angle = start_angle + (end_angle - start_angle) * eased_t
-            set_servo_angle(pwm, angle)
-        time.sleep(duration / steps)
+    Parameters:
+        pwms: Liste von PWM-Objekten
+        start_angles: Liste der Startwinkel
+        end_angles: Liste der Zielwinkel
+        duration: Gesamtdauer der Bewegung in Sekunden
+        steps: Anzahl der Zwischenschritte (default: 500)
+    """
+    # Eingabevalidierung
+    if not (len(pwms) == len(start_angles) == len(end_angles)):
+        raise ValueError("Anzahl der PWMs, Start- und Endwinkel muss übereinstimmen")
+    
+    # Minimale Verzögerung zwischen Schritten (in Sekunden)
+    min_delay = 0.001
+    
+    # Berechne tatsächliche Verzögerung
+    step_delay = max(duration / steps, min_delay)
+    actual_steps = int(duration / step_delay)
+    
+    try:
+        for i in range(actual_steps + 1):
+            t = i / actual_steps
+            eased_t = ease_in_out(t)
+            
+            for pwm, start_angle, end_angle in zip(pwms, start_angles, end_angles):
+                # Begrenze Winkel auf gültigen Bereich
+                angle = max(0, min(180, start_angle + (end_angle - start_angle) * eased_t))
+                set_servo_angle(pwm, angle)
+                
+            time.sleep(step_delay)
+            
+    except KeyboardInterrupt:
+        # Sauberes Beenden bei Ctrl+C
+        print("Bewegung unterbrochen")
+        
+    except Exception as e:
+        print(f"Fehler während der Bewegung: {e}")
+        raise
 
 
 def zuPosBewegen(positionen):
@@ -116,6 +167,11 @@ def zuPosBewegen(positionen):
     pixels.show()
 
 
+
+servo1.angle=achsen[0]
+servo2.angle=achsen[1]
+servo3.angle=achsen[2]
+servo4.angle=achsen[3]
 while True:
     x_val = get_voltage(x_axis)
     y_val = get_voltage(y_axis)
@@ -140,28 +196,47 @@ while True:
     
     time.sleep(0.1)
     
+    if axis_12:
+        axis1 = 1
+        axis2 = 2
+    else:
+        axis1 = 0
+        axis2 = 3
+    
     if x_val < 1.6:
         bewegung = abs(x_val - 1.6)
-        if (achsen[2] < 170):
-            achsen[2] += bewegung * 5
-            servo2.angle = achsen[2]
-            print(f"Joystick nach links {achsen[2]}")
+        if (achsen[axis1] < 170):
+            achsen[axis1] += int(bewegung * 5)
+            if axis_12:
+                servo2.angle = achsen[axis1]
+            else:
+                servo1.angle = achsen[axis1]
+            print(f"Joystick nach links {axis1} {achsen[axis1]}")
     if x_val > 1.7:
         bewegung = x_val - 1.7
-        if (achsen[2] > 10):
-            achsen[2] -= bewegung * 5
-            servo2.angle = achsen[2]
-            print(f"Joystick nach rechts {achsen[2]}")
+        if (achsen[axis1] > 10):
+            achsen[axis1] -= int(bewegung * 5)
+            if axis_12:
+                servo2.angle = achsen[axis1]
+            else:
+                servo1.angle = achsen[axis1]
+            print(f"Joystick nach rechts {axis1} {achsen[axis1]}")
     if y_val < 1:
-        if (achsen[3] < 170):
-            achsen[3] += 5
-            servo3.angle = achsen[3]
-            print(f"Joystick nach unten {achsen[3]}")
+        if (achsen[axis2] < 170):
+            achsen[axis2] += 5
+            if axis_12:
+                servo3.angle = achsen[axis2]
+            else:
+                servo4.angle = achsen[axis2]
+            print(f"Joystick nach unten {axis2} {achsen[axis2]}")
     elif y_val > 2:   
-        if (achsen[3] > 10):
-            achsen[3] -= 5
-            servo3.angle = achsen[3]
-            print(f"Joystick nach oben {achsen[3]}")
+        if (achsen[axis2] > 10):
+            achsen[axis2] -= 5
+            if axis_12:
+                servo3.angle = achsen[axis2]
+            else:
+                servo4.angle = achsen[axis2]
+            print(f"Joystick nach oben {axis2} {achsen[axis2]}")
             
     # Check if the button is pressed
     if not(btn_play.value):
@@ -173,4 +248,11 @@ while True:
         print("REC is pressed")
         positionen.append(achsen)
         print(positionen)
+        time.sleep(1)
+
+    if not(btn_change.value):
+        print("CHANGE is pressed")
+        axis_12 = not(axis_12)
+        print(axis_12)
+        # positionen = [[90, 90, 90, 90]]
         time.sleep(1)
