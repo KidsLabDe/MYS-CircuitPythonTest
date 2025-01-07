@@ -99,6 +99,7 @@ while True:
     
     time.sleep(0.1)
     
+    
     if axis_12:
         axis1 = 1
         axis2 = 2
@@ -106,41 +107,52 @@ while True:
         axis1 = 0
         axis2 = 3
     
-    if x_val < 1.6:
-        bewegung = abs(x_val - 1.6)
+    if y_val < 1.6:
+        bewegung = abs(y_val - 1.6)
         if achsen[axis1] < 170:
-            achsen[axis1] += int(bewegung * 5)
+            achsen[axis1] -= int(bewegung * 5)
+            if achsen[axis1] > 180:
+                achsen[axis1] = 180
             if axis_12:
                 servo2.angle = achsen[axis1]
             else:
                 servo1.angle = achsen[axis1]
             print(f"Joystick nach links {axis1} {achsen[axis1]}")
-    if x_val > 1.7:
-        bewegung = x_val - 1.7
+    if y_val > 1.7:
+        bewegung = y_val - 1.7
         if achsen[axis1] > 10:
-            achsen[axis1] -= int(bewegung * 5)
+            achsen[axis1] += int(bewegung * 5)
+            if achsen[axis1] < 0:
+                achsen[axis1] = 0
             if axis_12:
                 servo2.angle = achsen[axis1]
             else:
                 servo1.angle = achsen[axis1]
             print(f"Joystick nach rechts {axis1} {achsen[axis1]}")
-    if y_val < 1:
+    if x_val < 1.6:
+        bewegung = abs(x_val - 1.6)
         if achsen[axis2] < 170:
-            achsen[axis2] += 5
+            achsen[axis2] += int(bewegung * 5)
+            if achsen[axis2] > 180:
+                achsen[axis2] = 180
             if axis_12:
                 servo3.angle = achsen[axis2]
             else:
                 servo4.angle = achsen[axis2]
             print(f"Joystick nach unten {axis2} {achsen[axis2]}")
-    elif y_val > 2:   
+            print(x_val)
+    elif x_val > 1.7:   
+        bewegung = x_val - 1.7
         if achsen[axis2] > 10:
-            achsen[axis2] -= 5
+            achsen[axis2] -= int(bewegung * 5)
+            if achsen[axis2] < 0:
+                achsen[axis2] = 0
             if axis_12:
                 servo3.angle = achsen[axis2]
             else:
                 servo4.angle = achsen[axis2]
             print(f"Joystick nach oben {axis2} {achsen[axis2]}")
-            
+            print(x_val)
     if not btn_play.value:
         print("PLAY is pressed")
         for i in range(len(positionen)):
