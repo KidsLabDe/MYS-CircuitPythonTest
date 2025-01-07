@@ -15,6 +15,10 @@ import rotaryio
 positionen = [[90, 90, 90, 90]
              ]
 
+positionen = [[90, 90, 90, 90], [13, 72, 125, 130], [13, 72, 125, 130], [13, 72, 125, 130], [13, 72, 125, 130], [13, 72, 125, 130]]
+
+
+DEBUG = False
 # positionen = [[90, 90, 90, 90], [34, 110, 10, 70], [34, 110, 10, 70], [34, 110, 10, 70], [34, 110, 10, 70], [34, 110, 10, 70], [34, 110, 10, 70]]
 
 # Bewegungsverzögerung in Sekunden
@@ -256,7 +260,7 @@ while True:
         # loop through the positions
         for i in range(0, len(positionen)):
             print(positionen[i])
-            move_servos_eased(pwms, achsen, positionen[i], Bewegungsdauer)
+            move_servos_eased([servo1, servo2, servo3, servo4], achsen, positionen[i], Bewegungsdauer)
             achsen = positionen[i]
         # zuPosBewegen(positionen)
         print("Ende")
